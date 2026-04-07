@@ -243,7 +243,8 @@ private fun HistoryTab(state: AppState) {
 
 @Composable
 private fun CommitCard(shortHash: String, message: String, author: String, date: Long) {
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.of("pt", "BR")) }
+    @Suppress("DEPRECATION")
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR")) }
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
@@ -255,7 +256,8 @@ private fun CommitCard(shortHash: String, message: String, author: String, date:
             Column(modifier = Modifier.weight(1f)) {
                 Text(message, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("$author  ${dateFormat.format(Date(date))}", style = MaterialTheme.typography.bodySmall,
+                val formattedDate = dateFormat.format(Date(date))
+                Text("$author  $formattedDate", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
         }
