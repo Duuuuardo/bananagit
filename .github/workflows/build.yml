@@ -1,0 +1,112 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install packaging dependencies
+        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg rpm
+
+      - name: Build
+        run: ./gradlew compileKotlin
+
+      - name: Package distributable
+        run: ./gradlew createDistributable
+
+      - name: Package Deb
+        run: ./gradlew packageDeb
+
+      - name: Tar distributable
+        run: tar -czf bananagit-linux-x64.tar.gz -C build/compose/binaries/main/app .
+
+      - name: Upload Deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: bananagit-deb
+          path: build/compose/binaries/main/deb/*.deb
+
+      - name: Upload portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: bananagit-linux-x64
+          path: bananagit-linux-x64.tar.gz
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/compose/binaries/main/deb/*.deb
+            bananagit-linux-x64.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew compileKotlin
+
+      - name: Package distributable
+        run: ./gradlew createDistributable
+
+      - name: Package MSI
+        run: ./gradlew packageMsi
+
+      - name: Zip distributable
+        run: Compress-Archive -Path build/compose/binaries/main/app/* -DestinationPath bananagit-windows-x64.zip
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: bananagit-msi
+          path: build/compose/binaries/main/msi/*.msi
+
+      - name: Upload portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: bananagit-windows-x64
+          path: bananagit-windows-x64.zip
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/compose/binaries/main/msi/*.msi
+            bananagit-windows-x64.zip
